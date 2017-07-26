@@ -37,3 +37,7 @@ public List<LouDongBo> findAll() {
     return FangjiaBeanUtils.copyProperties(list, LouDongBo.class);
 }
  ```
+
+# 作者
+- 尹吉欢 1304489315@qq.com
+- 博客 http://cxytiandi.com/blogs/yinjihuan
