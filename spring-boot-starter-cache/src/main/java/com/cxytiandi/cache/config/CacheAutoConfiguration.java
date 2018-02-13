@@ -1,50 +1,30 @@
 package com.cxytiandi.cache.config;
 
 import java.lang.reflect.Method;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachingConfigurerSupport;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.util.StringUtils;
-
 import com.cxytiandi.cache.util.ClassUtil;
 import com.cxytiandi.cache.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import redis.clients.jedis.JedisPoolConfig;
 
 @Configuration
-@EnableConfigurationProperties(CacheConfig.class)
-public class CacheAutoConfiguration {
+public class CacheAutoConfiguration extends CachingConfigurerSupport {
 
-	@Autowired
-	private CacheConfig config;
-
-	@Bean
-	public JedisConnectionFactory jedisConnectionFactory() {
-		JedisConnectionFactory factory = new JedisConnectionFactory();
-		factory.setHostName(config.getHost());
-		factory.setPort(config.getPort());
-		if (StringUtils.hasText(config.getPassword())) {
-			factory.setPassword(config.getPassword());
-		}
-		JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
-		jedisPoolConfig.setMaxTotal(config.getMaxActive());
-		jedisPoolConfig.setMaxIdle(config.getMaxIdle());
-		jedisPoolConfig.setMinIdle(config.getMinIdle());
-		jedisPoolConfig.setMaxWaitMillis(config.getMaxWait());
-		factory.setPoolConfig(jedisPoolConfig);
-		return factory;
-	}
-
+	private Logger logger = LoggerFactory.getLogger(CacheAutoConfiguration.class);
+	
 	@SuppressWarnings("rawtypes")
 	@Bean
 	public CacheManager cacheManager(RedisTemplate redisTemplate) {
@@ -94,5 +74,37 @@ public class CacheAutoConfiguration {
 				return sb.toString();
 			}
 		};
+	}
+	
+	/**
+	 * redis数据操作异常处理 这里的处理：在日志中打印出错误信息，但是放行
+	 * 保证redis服务器出现连接等问题的时候不影响程序的正常运行，使得能够出问题时不用缓存,继续执行业务逻辑去查询DB
+	 * 
+	 * @return
+	 */
+	@Bean
+	public CacheErrorHandler errorHandler() {
+		CacheErrorHandler cacheErrorHandler = new CacheErrorHandler() {
+			@Override
+			public void handleCacheGetError(RuntimeException e, Cache cache, Object key) {
+				logger.error("redis异常：key=[{}]", key, e);
+			}
+
+			@Override
+			public void handleCachePutError(RuntimeException e, Cache cache, Object key, Object value) {
+				logger.error("redis异常：key=[{}]", key, e);
+			}
+
+			@Override
+			public void handleCacheEvictError(RuntimeException e, Cache cache, Object key) {
+				logger.error("redis异常：key=[{}]", key, e);
+			}
+
+			@Override
+			public void handleCacheClearError(RuntimeException e, Cache cache) {
+				logger.error("redis异常：", e);
+			}
+		};
+		return cacheErrorHandler;
 	}
 }
