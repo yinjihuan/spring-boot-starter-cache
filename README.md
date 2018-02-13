@@ -10,11 +10,11 @@
 <dependency>
 	<groupId>com.cxytiandi</groupId>
 	<artifactId>spring-boot-starter-cache</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.2</version>
 </dependency>
 ```
 
-redis配置 参考：[https://github.com/yinjihuan/spring-boot-starter-cache/blob/master/spring-boot-starter-cache/src/main/java/com/cxytiandi/cache/config/CacheConfig.java](https://github.com/yinjihuan/spring-boot-starter-cache/blob/master/spring-boot-starter-cache/src/main/java/com/cxytiandi/cache/config/CacheConfig.java)
+redis配置 参考：org.springframework.boot.autoconfigure.data.redis.RedisProperties
 ```
 spring.redis.host=192.168.10.47
 spring.redis.port=6379
